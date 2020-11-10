@@ -64,7 +64,7 @@ int main(int argc, char *argv[])
     int portno;
 
 
-    char buffer[513];
+    char buffer[512];
 
     struct sockaddr_in serv_addr;
     struct sockaddr_in cli_addr;
@@ -132,67 +132,25 @@ int main(int argc, char *argv[])
 
         cout << endl;
         cout << received_packet->getData() << endl;
+        cout << "Packet Length " << received_packet->getLength() << endl;
+
 
         cout << "SENDING ACK!" << endl << endl;
         sendto(sockfd, ackPacketMsg, 64, 0, (struct sockaddr *) &cli_addr, clilen);
 
         packetType = received_packet->getType();
-        packetLength = received_packet->getLength();
         packetSequenceNum = received_packet->getSeqNum();
 
         cout << endl << endl << endl;
 
         cout << packetSequenceNum << endl << endl << endl;
 
-        log << "Sequence Number for packet received: " << packetSequenceNum << endl;
-
-
-
-/*
-
-        //memset(buffer, 0, sizeof(buffer));
-        memset(payload, 0, sizeof(payload));
-        payload[29] = 0;
-
-        //recMsgSize = recvfrom(sockfd, &payload, sizeof(payload), 0, (struct sockaddr *) &cli_addr, &clilen);
-
-
-
-
-
+        log << "Sequence Number for packet received: " << received_packet->getSeqNum() << endl;
 
         //memcpy( destination, source, num)
-        memcpy(fileContents + bytesReceived, payload, 30);
-        bytesReceived += recMsgSize;
-
-        //cout << payload << endl;
-
-        cout << endl << endl;
-
-        cout << "Bytes Received: " << recMsgSize << endl << endl;
-
-        //packet *received_packet = new packet(0,0,packetLength, buffer);
-
-        //Was Like This:
-        //packet *received_packet = new packet(1, 0, 30, payload);
-
-        received_packet->deserialize(payload);
-        // type = t; seqnum = s; length = l; data = d;
-
-        //cout << "Writing to Log: " << endl;
-        log << received_packet->getSeqNum() << endl;
-
-        received_packet->printContents();
-
-        packetType = received_packet->getType();
-        packetLength = received_packet->getLength();
-        packetSequenceNum = received_packet->getSeqNum();
-
-        //
-
-*/
-
-
+        //memcpy(fileContents + bytesReceived, received_packet->getData(), 30);
+        strncpy(fileContents + bytesReceived, received_packet->getData(), strlen(received_packet->getData()));
+        bytesReceived = strlen(received_packet->getData());
 
         cout << "GOING INTO IF STATEMENT" << endl;
 
@@ -200,22 +158,14 @@ int main(int argc, char *argv[])
         {
             packet_received++;
             sendto(sockfd, ackPacketMsg, 64, 0, (struct sockaddr *) &cli_addr, clilen);
-            //packet *ackPack = new packet(0, 0, 0, 0);
 
             /*
-            //int offset = 30 * packetSequenceNum;
-            //memcpy(&buffer[offset], received_packet->getData(),30);
-
-
-
-            packet *ackPacket = new packet(0, 0, 0, NULL);
-            cout << "Sending ACK" << endl;
-
-            //if (packetSequenceNum == 6)
-                //break;
-
-                */
-
+            int offset = 30 * packetSequenceNum;
+            //memcpy( destination, source, num)
+            memcpy(&buffer[offset], received_packet->getData(), 30);
+            if (packetSequenceNum == 6)
+                break;
+            */
         }
 
 
@@ -224,31 +174,16 @@ int main(int argc, char *argv[])
         else if(packetType == 2)
         {
             cout << "EOT" << endl;
-
-
         }
 
-        // type = t;
-        // seqnum = s;
-        // length = l;
-        // data = d;
-
-
-        //After the server has received all data packets and an EOT from the client,
+        // After the server has received all data packets and an EOT from the client,
         // it should send an EOT
-        //packet with the type field set to 2, and then exit.
-
-
+        // packet with the type field set to 2, and then exit.
         // EOT end of transmission type field == 2
         // ACK packet == 0
         // Data Packet == 1
 
-
         //FILE* fp = fopen( "Output.txt", "wa");
-
-
-
-        //tot += b;
 
 
         //DELETE THIS LATER
