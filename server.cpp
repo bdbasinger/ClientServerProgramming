@@ -1,6 +1,10 @@
-//Brennan Basinger 
-//bdb264
+// Authors:
 
+// Brennan Basinger
+// bdb264
+
+// Sam Boggs
+// netid
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -40,6 +44,7 @@
 #include <string.h>
 
 #define MAX 80
+#define packetLen 37
 
 
 
@@ -53,21 +58,13 @@ void error(const char *msg)
 }
 
 
-
-
-
-
-
-
 int main(int argc, char *argv[])
 {
     int sockfd = 0;
-    int newsockfd, portno, b;
+    int portno;
 
 
     char buffer[513];
-
-
 
     struct sockaddr_in serv_addr;
     struct sockaddr_in cli_addr;
@@ -78,7 +75,9 @@ int main(int argc, char *argv[])
     int packet_received = -1;
     int packetLength = 30;
     int packetType;
-    int packetSequenceNum = 0;
+
+    //int packetSequenceNum = 0;
+    int packetSequenceNum;
 
     if (argc < 2)
     {
@@ -87,12 +86,7 @@ int main(int argc, char *argv[])
      }
 
     ofstream log("arrival.log", ios_base::out | ios_base::trunc);
-
     portno = atoi(argv[1]);
-
-
-    //bzero((char *) &serv_addr, sizeof(serv_addr));
-    //bzero(buffer, 512);
 
     if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
     {
@@ -113,21 +107,59 @@ int main(int argc, char *argv[])
     FILE* fp = fopen( "output.txt", "wa");
     cout << "Creating File: output.txt" << endl;
 
-
     int bytesReceived = 0;
     char fileContents[512];
     memset(fileContents, 0, sizeof(fileContents));
-    fileContents[511] = 0;
-    char payload[30];
+    fileContents[511] = '\0';
+
+    char payloadA[512];
+    memset(payloadA, 0, 512);
+    char serialized[37];
+    memset(serialized, 0, 37);
+    char ackPacketMsg[] = "ACK PACKET: MESSAGE RECEIVED!";
+
+    packet *received_packet = new packet(0, 0, 0, payloadA);
+
 
     while (1)
     {
+        recMsgSize = recvfrom(sockfd, serialized, 37, 0, (struct sockaddr *) &cli_addr, &clilen);
+        if (recMsgSize < 0)
+            cout << "Error: Failed To Receive Message!" << endl << endl;
+
+        received_packet->deserialize(serialized);
+        received_packet->printContents();
+
+        cout << endl;
+        cout << received_packet->getData() << endl;
+
+        cout << "SENDING ACK!" << endl << endl;
+        sendto(sockfd, ackPacketMsg, 64, 0, (struct sockaddr *) &cli_addr, clilen);
+
+        packetType = received_packet->getType();
+        packetLength = received_packet->getLength();
+        packetSequenceNum = received_packet->getSeqNum();
+
+        cout << endl << endl << endl;
+
+        cout << packetSequenceNum << endl << endl << endl;
+
+        log << "Sequence Number for packet received: " << packetSequenceNum << endl;
+
+
+
+/*
+
         //memset(buffer, 0, sizeof(buffer));
         memset(payload, 0, sizeof(payload));
         payload[29] = 0;
 
-        recMsgSize = recvfrom(sockfd, &payload, sizeof(payload), 0,
-                (struct sockaddr *) &cli_addr, &clilen);
+        //recMsgSize = recvfrom(sockfd, &payload, sizeof(payload), 0, (struct sockaddr *) &cli_addr, &clilen);
+
+
+
+
+
 
         //memcpy( destination, source, num)
         memcpy(fileContents + bytesReceived, payload, 30);
@@ -135,13 +167,14 @@ int main(int argc, char *argv[])
 
         //cout << payload << endl;
 
-        cout << endl;
-        cout << endl;
+        cout << endl << endl;
 
-        cout << "Bytes Received: " << recMsgSize << endl;
+        cout << "Bytes Received: " << recMsgSize << endl << endl;
 
         //packet *received_packet = new packet(0,0,packetLength, buffer);
-        packet *received_packet = new packet(1, 0, 30, payload);
+
+        //Was Like This:
+        //packet *received_packet = new packet(1, 0, 30, payload);
 
         received_packet->deserialize(payload);
         // type = t; seqnum = s; length = l; data = d;
@@ -155,8 +188,9 @@ int main(int argc, char *argv[])
         packetLength = received_packet->getLength();
         packetSequenceNum = received_packet->getSeqNum();
 
-        //log << "Sequence Number for packet received: " << received_packet->getSeqNum() << endl;
+        //
 
+*/
 
 
 
@@ -165,19 +199,22 @@ int main(int argc, char *argv[])
         if (packetSequenceNum == packet_received + 1)
         {
             packet_received++;
+            sendto(sockfd, ackPacketMsg, 64, 0, (struct sockaddr *) &cli_addr, clilen);
+            //packet *ackPack = new packet(0, 0, 0, 0);
 
+            /*
             //int offset = 30 * packetSequenceNum;
             //memcpy(&buffer[offset], received_packet->getData(),30);
 
-            received_packet->printContents();
 
-            //packet *ackPacket = new packet(0, packetSequenceNum, packetLength, 0);
+
             packet *ackPacket = new packet(0, 0, 0, NULL);
             cout << "Sending ACK" << endl;
-            sendto(sockfd, &ackPacket, sizeof(ackPacket), 0,
-                    (struct sockaddr *) &cli_addr, clilen);
-            if (packetSequenceNum == 6)
-                break;
+
+            //if (packetSequenceNum == 6)
+                //break;
+
+                */
 
         }
 
@@ -214,7 +251,9 @@ int main(int argc, char *argv[])
         //tot += b;
 
 
-
+        //DELETE THIS LATER
+        if(packetSequenceNum > 12)
+            break;
 
 
 
