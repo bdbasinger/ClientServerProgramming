@@ -29,7 +29,7 @@
 
 #define TIMEOUT 2
 #define ATTEMPTLIMIT 20 // set max attempts to send packet
-#define packetLen 30
+#define packetLen 40
 
 
 
@@ -150,6 +150,8 @@ int main(int argc, char *argv[]) {
 
     int i = 0;
     char spacketA[packetLen];
+    packet *mySendPacket = new packet(1, packetSequenceNum, strlen(payloadA), payloadA );
+    size_t dest_size = sizeof(spacketA);
 
 
     while ((Attempt < ATTEMPTLIMIT) && (packet_received < nPackets - 1)) {
@@ -169,7 +171,7 @@ int main(int argc, char *argv[]) {
                 if ((base + packetSequenceNum) < nPackets)
                 {
                     memset(data, 0, sizeof(data));
-                    memcpy(data, sendBuffer + i, 30);
+                    memcpy(data, payloadA + i, 30);
                     data[29] = 0;
                     i = i + 30;
                     packet *spacket = new packet(1, packetSequenceNum, packetLength + 7, data);
@@ -206,23 +208,24 @@ int main(int argc, char *argv[]) {
 
 
                         //type, seq_num, length, data
-                        memset(spacketA, 0, sizeof(spacketA));
+                        memset(spacketA, 0, packetLen);
+
                         //memcpy(spacketA, payloadA + i, packetLen);
-                        spacketA[packetLen - 1] = '\0';
                         strncpy(spacketA, payloadA + i, packetLen);
+                        spacketA[dest_size - 1] = '\0';
 
                         cout << endl << endl;
 
-                        cout << "payloadA: " << payloadA + i << endl << endl;
+                        //cout << "payloadA: " << payloadA + i << endl << endl;
 
-                        cout << "spacket Stuff: " << spacketA << endl << endl;
+                        cout << "SPACKET STUFF: " << spacketA << "END OF spacket STUFF!" << endl << endl;
 
 
                         i = i + 30;
                         //cout << spacketA << endl;
 
                         // type seqnum length data
-                        packet *mySendPacket = new packet(1, packetSequenceNum, strlen(payloadA), payloadA );
+                        //
 
                         //mySendPacket->printContents();
 
