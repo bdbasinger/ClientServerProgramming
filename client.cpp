@@ -47,12 +47,13 @@ off_t GetFileLength(std::string const &filename);
 
 int main(int argc, char *argv[]) {
 
-    int sockfd = 0;
-    int portno;
-    struct sockaddr_in serv_addr; // Change back to serv_addr fromAddr
-    struct hostent *s;
+    //int sockfd = 0;
+    //int portno;
+    //struct sockaddr_in serv_addr; // Change back to serv_addr fromAddr
+    //struct hostent *s;
 
 
+    int lengthPacket;
     int nPackets = 0; // Number of packets to send CHANGE
     int packet_received = -1; // highest ack received CHANGE
     int packet_sent = -1; // highest packet sent CHANGE
@@ -61,7 +62,6 @@ int main(int argc, char *argv[]) {
     int wSize = 7;
     int flag = 1;
     unsigned int size;
-    int packetLength = 30;
     int packetSequenceNum = 0;
     int sequence_num = 0;
     int Attempt = 0;
@@ -71,11 +71,18 @@ int main(int argc, char *argv[]) {
 
 
 
+    char buff[512];
+    //memset(buff, 0, sizeof(buff));  //could use this as well?
+    bzero(buff, sizeof(buff));
+    buff[511] = '\0';
+
+
 
     //arg 1 localhost
     //arg 2 emulator port
     //arg 3 client port number
     //arg 4 file.txt
+
 
 
     // 1
@@ -90,15 +97,12 @@ int main(int argc, char *argv[]) {
     // ******************************************************************
     // ******************************************************************
 
-
     // 2
     // Client Sets up DGRAM Socket for Sending
     int CESocket = socket(AF_INET, SOCK_DGRAM, 0);
     if(CESocket < 0){
         cout << "Error: failed to open datagram socket.\n";
     }
-
-
 
     // 3
     // Setup sockaddr_in Structure For Sending
@@ -134,30 +138,12 @@ int main(int argc, char *argv[]) {
     int cl_rec_port = strtol(argv[3], &end2, 10);  // client's receiving port and convert to int
     EC.sin_port = htons(cl_rec_port);             // set to emulator's receiving port
 
+
     // 6
     // do the binding
     if (bind(ECSocket, (struct sockaddr *)&EC, EC_length) == -1){
         cout << "Error in binding.\n";
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
     // Create Logs
@@ -170,24 +156,10 @@ int main(int argc, char *argv[]) {
         exit(0);
     }
 
-    // atoi string to integer: port number specified by command line argument
-    // portno = atoi(argv[3]);
-
-    //s = gethostbyname(argv[1]);
-
-
-    if (sockfd < 0)
-        error("ERROR opening socket");
-
-    if (s == NULL) {
-        fprintf(stderr, "ERROR, no such host\n");
-        exit(0);
-    }
-
-    int fileLength = GetFileLength(argv[3]);
+    int fileLength = GetFileLength(argv[4]);
 
     // Client opens file specified by Command Line argument
-    FILE *fp = fopen(argv[3], "rb");
+    FILE *fp = fopen(argv[4], "rb");
 
     if (fp == NULL) {
         cout << "Error" << endl;
@@ -196,7 +168,6 @@ int main(int argc, char *argv[]) {
     }
 
     // buffer that is sent
-    char payloadBuffer[1024];
     char payloadA[512]; // buffer containing payload data
     payloadA[511] = '\0';
 
@@ -213,23 +184,24 @@ int main(int argc, char *argv[]) {
         nPackets++;
 
     cout << "Number of Packets: " << nPackets << endl;
-    //Make address for server
 
+/*
+    //Make address for server
     memset((char *) &serv_addr, 0, sizeof(serv_addr));
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_port = htons(portno);
     bcopy((char *) s->h_addr, (char *) &serv_addr.sin_addr.s_addr, s->h_length);
     socklen_t slen = sizeof(serv_addr);
-
+*/
 
     //SETUP sockaddr_in structure for sending
+
 
 
 
     int i = 0;
     char spacketA[packetLen];
     size_t dest_size = sizeof(spacketA);
-    int tmpSeqNum = 0;
     int count = 0;
 
     while ((Attempt < ATTEMPTLIMIT) && (packet_received < nPackets - 1)) {
@@ -242,65 +214,105 @@ int main(int argc, char *argv[]) {
                 //Get highest packet
                 packet_sent = min(max(base + packetSequenceNum, packet_sent), nPackets - 1);
                 if (packetSequenceNum == nPackets) {
-                    packetLength = fileLength % 30;
+                    lengthPacket = fileLength % 30;
                 }
+
+
+
+
+                // CHECK IF ITS THE LAST PACKET
+                // IF IT IS THEN SEND EOT PACKET
                 if (count == nPackets - 1)
                 {
+                    //EOT PACKET
                     cout << endl;
-
                     packet *eotPacket = new packet(2,0,0,0);
                     memset(spacketA, 0, packetLen);
                     spacketA[dest_size - 1] = '\0';
                     eotPacket->serialize(spacketA);
                     cout << endl << endl << "SENDING EOT PACKET: " << endl << endl << endl;
-                    sendto(sockfd, spacketA, packetLen, 0, (struct sockaddr *) &serv_addr, slen);
+                    sendto(CESocket, spacketA, packetLen, 0, (struct sockaddr *) &CE, CE_length);
                 }
 
                 count++;
                 // memset(pointer to block of memory to fill, value to be set, number of bytes to be set)
                 // memcpy(destination array where content is to be copied, pointer to source of data, num bytes to copy)
                 if ((base + packetSequenceNum) < nPackets) {
-                    packet *mySendPacket = new packet(1, packetSequenceNum, strlen(payloadA), payloadA);
 
+                    /*
                     //type, seq_num, length, data
+                    packet *mySendPacket = new packet(1, packetSequenceNum, strlen(payloadA), payloadA);
                     memset(spacketA, 0, packetLen);
                     strncpy(spacketA, payloadA + i, packetLen);
                     spacketA[dest_size - 1] = '\0';
-
                     cout << endl << endl;
-
-                    cout << "SPACKET: " << spacketA << " END OF SPACKET " << endl << endl;
+                    cout << "<---SPACKET: " << spacketA << " SPACKET--->" << endl << endl;
                     i = i + 30;
-
                     mySendPacket->serialize(spacketA);
-                    sendto(sockfd, spacketA, packetLen, 0, (struct sockaddr *) &serv_addr, slen);
+
+                    */
 
 
-                    // sendto(sockfd, data, sizeof(data), 0,(struct sockaddr *) &serv_addr, slen);
-                    // now going to send serialize and send 3 packets
-                    // char payloadA[512]="123"; // payload data
-                    // char spacketA[packetLen];  // for holding serialized packet
-                    // memset(spacketA, 0, packetLen); // serialize the packet to be sent
-                    // packet mySendPacket(1, 101, strlen(payloadA), payloadA);
-                    // make the packet to be serialized and sent
-                    // mySendPacket.serialize(spacketA);
-                    // serialize so spacket contains serialized contents of mySendPacket's payload
-                    // sendto(mysocket, spacketA, 50, 0, (struct sockaddr *)&server, slen);
+
+
+                    
+
+
+
+
+
+                    //FIX THE MOTHER FUCKING PACKET!!!
+
+                    packet pack(1, packetSequenceNum, strlen(buff), buff); // Create Packet
+                    pack.printContents(); // Check Packet Contents
+                    memset(spacketA, 0, packetLen); // Set the content
+                    strncpy(spacketA, payloadA + i, packetLen); // copy the contents of specified index to packet data buffer
+                    spacketA[dest_size - 1] = '\0'; // Make sure the buffer that contains packet data is null terminated
+                    i += 32; // Increase the index that we take from the buffer that contains the file contents
+                    pack.serialize(spacketA); // Serialze the buffer containing specified packet data
+
+                    // Send the Fucking Packet and Pray...
+                    if(sendto(CESocket, spacketA, sizeof(spacketA), 0, (struct sockaddr *)&CE, sizeof(CE)) < 0){
+                        cout << "Failed to send Packet: FIX THE FKIN PACKET" << endl;
+                    }
+
+
+                    // MAX'S CODE:
+                    //packet pkt(1,101,0,NULL); // create dummy packet
+                    //pkt.printContents();      // checking contents
+                    //char spacket[50];  // for serializing the packet to send
+                    //memset(spacket, 0, 50); // serialize the packet to be sent
+                    //pkt.serialize(spacket);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                    //if (sendto(CESocket, spacketA, packetLen, 0, (struct sockaddr *) &CE, sizeof(CE)) < 0){
+                        //cout << "Failed to send payload" << endl;
+                    //}
                     cout << endl << endl;
                     cout << "COUNT COUNT COUNT COUNT: " << count << endl << endl;
 
 
                 }
-                //if (count >= nPackets)
-                    //packetSequenceNum = 1000;
+
             }
         }
 
-        size = sizeof(serv_addr);
+        //size = sizeof(serv_addr);
         alarm(TIMEOUT);
         packet *ackPacket = new packet(0, 0, 0, NULL);
-        while ((len = (recvfrom(sockfd, ack, 64, 0, (struct sockaddr *) &serv_addr,
-                                &size))) < 0)
+        while ((len = (recvfrom(ECSocket, ack, 64, 0,  (struct sockaddr *) &EC, &EC_length))) < 0)
 
             if (errno == EINTR) {
                 if (Attempt < ATTEMPTLIMIT) {
@@ -337,7 +349,7 @@ int main(int argc, char *argv[]) {
         }
 
     }
-    close(sockfd);
+    //close(sockfd);
     cout << "Closing Socket" << endl;
     return 0;
 }

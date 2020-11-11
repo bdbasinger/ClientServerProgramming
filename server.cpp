@@ -59,16 +59,20 @@ void error(const char *msg)
 
 
 int main(int argc, char *argv[]) {
-    int sockfd = 0;
-    int portno;
+    //int sockfd = 0;
+    //int portno;
 
 
     char buffer[512];
 
-    struct sockaddr_in serv_addr;
-    struct sockaddr_in cli_addr;
+    //struct sockaddr_in serv_addr;
 
-    socklen_t clilen = sizeof(cli_addr);
+
+
+    //1
+    struct sockaddr_in client_address;
+    socklen_t clientLength = sizeof(client_address);
+
 
     int recMsgSize;
     int packet_received = -1;
@@ -80,30 +84,98 @@ int main(int argc, char *argv[]) {
     //int packetSequenceNum = 0;
     int packetSequenceNum;
 
-    if (argc < 2) {
-        cout << "Error! Port Number Required." << endl;
-        exit(1);
+
+    // 2
+    //SETUP DATAGRAM SOCKET FOR RECEIVING
+    int ESSocket = socket(AF_INET, SOCK_DGRAM, 0);
+    if(ESSocket < 0){
+        cout << "Error: failed to open datagram socket.\n";
     }
 
-    ofstream log("arrival.log", ios_base::out | ios_base::trunc);
-    portno = atoi(argv[1]);
+    // 3
+    // set up the sockaddr_in structure for receiving
+    struct sockaddr_in ES;
+    socklen_t ES_length = sizeof(ES);
+    bzero(&ES, sizeof(ES));
+    ES.sin_family = AF_INET;
+    ES.sin_addr.s_addr = htonl(INADDR_ANY);
+    char * end;
+    int sr_rec_port = strtol(argv[2], &end, 10);  // server's receiving port and convert to int
+    ES.sin_port = htons(sr_rec_port);             // set to emulator's receiving port
 
+
+    //4
+    // do the binding
+    if (bind(ESSocket, (struct sockaddr *)&ES, ES_length) == -1)
+        cout << "Error in binding.\n";
+
+    // ******************************************************************
+    // ******************************************************************
+
+
+
+    //5
+    struct hostent *em_host;            // pointer to a structure of type hostent
+    em_host = gethostbyname(argv[1]);   // host name for emulator
+    if(em_host == NULL){
+        cout << "Failed to obtain emulator.\n";
+        exit(EXIT_FAILURE);
+    }
+
+
+
+    //6
+    int SESocket = socket(AF_INET, SOCK_DGRAM, 0);
+    if(SESocket < 0){
+        cout << "Error in trying to open datagram socket.\n";
+        exit(EXIT_FAILURE);
+    }
+
+
+    // 7
+    // setup sockaddr_in struct
+    struct sockaddr_in SE;
+    memset((char *) &SE, 0, sizeof(SE));
+    SE.sin_family = AF_INET;
+    bcopy((char *)em_host->h_addr, (char*)&SE.sin_addr.s_addr, em_host->h_length);
+    int em_rec_port = strtol(argv[3], &end, 10);
+    SE.sin_port = htons(em_rec_port);
+
+    cout << "Hello There " << endl;
+
+
+
+
+
+    ofstream log("arrival.log", ios_base::out | ios_base::trunc);
+
+    //portno = atoi(argv[1]);
+
+    /*
     if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
         cout << "Failed to create socket" << endl;
     }
+     */
 
+
+    /*
     memset((char *) &serv_addr, 0, sizeof(serv_addr));
-
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_port = htons(portno);
     serv_addr.sin_addr.s_addr = INADDR_ANY;
+     */
 
+
+    /*
     if (bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) == -1) {
         cout << "Failed to Bind" << endl;
     }
+     */
 
-    FILE *fp = fopen("output.txt", "wa");
-    cout << "Creating File: output.txt" << endl;
+
+
+
+    cout << "Hello " << endl;
 
     int bytesReceived = 0;
     char fileContents[512];
@@ -118,15 +190,25 @@ int main(int argc, char *argv[]) {
 
     packet *received_packet = new packet(0, 0, 0, payloadA);
 
+    cout << "Entering While Loop" << endl;
 
     while (1) {
-        recMsgSize = recvfrom(sockfd, serialized, 37, 0, (struct sockaddr *) &cli_addr, &clilen);
-        if (recMsgSize < 0)
-            cout << "Error: Failed To Receive Message!" << endl << endl;
+        cout << "Inside While Loop " << endl;
+
+
+        recvfrom(ESSocket, serialized, sizeof(serialized), 0, (struct sockaddr *) &ES, &ES_length);
+        //if (recMsgSize < 0)
+        //{
+            //cout << "Error: Failed To Receive Message!" << endl << endl;
+        //}
+
+
 
         received_packet->deserialize(serialized);
         received_packet->printContents();
+
         cout << endl << endl;
+
         cout << "PRINTING TYPE: " << received_packet->getType() << endl << endl;
 
         cout << endl;
@@ -136,15 +218,19 @@ int main(int argc, char *argv[]) {
 
 
         cout << "SENDING ACK!" << endl << endl;
-        sendto(sockfd, ackPacketMsg, 64, 0, (struct sockaddr *) &cli_addr, clilen);
+
+        sendto(SESocket, ackPacketMsg, 64, 0, (struct sockaddr *) &SE, sizeof(struct sockaddr_in));
+
+
+
 
         packetType = received_packet->getType();
         packetSequenceNum = received_packet->getSeqNum();
         cout << endl << endl << endl;
         cout << "Packet Sequence Number: " << packetSequenceNum << endl << endl << endl;
         log << packetSequenceNum << endl;
-        if (packetType == 2)
-            break;
+        //if (packetType == 2)
+            //break;
         //memcpy( destination, source, num)
         //memcpy(fileContents + bytesReceived, received_packet->getData(), 30);
         strncpy(fileContents + bytesReceived, received_packet->getData(), 30);
@@ -153,29 +239,12 @@ int main(int argc, char *argv[]) {
 
         cout << "GOING INTO IF STATEMENT" << endl;
 
-        if (packetSequenceNum == packet_received + 1) {
+        if (packetSequenceNum == packet_received + 1)
+        {
             packet_received++;
-            sendto(sockfd, ackPacketMsg, 64, 0, (struct sockaddr *) &cli_addr, clilen);
-
-            //offset = 30 * s;
-            //s += 1;
-
-            /*
-            int offset = 30 * packetSequenceNum;
-            //memcpy( destination, source, num)
-            memcpy(&buffer[offset], received_packet->getData(), 30);
-            if (packetSequenceNum == 6)
-                break;
-            */
+            sendto(SESocket, ackPacketMsg, 64, 0, (struct sockaddr *) &SE, sizeof(struct sockaddr_in));
 
         }
-
-
-
-
-
-
-
         // After the server has received all data packets and an EOT from the client,
         // it should send an EOT
         // packet with the type field set to 2, and then exit.
@@ -197,13 +266,17 @@ int main(int argc, char *argv[]) {
     }
 
 
+
+    FILE *fp = fopen("output.txt", "wa");
+    cout << "Creating File: output.txt" << endl;
+
     cout << "End Of Transmission Packet Received..." << endl;
     cout << "Attempting to write to file.." << endl;
     fwrite(fileContents, sizeof(char), bytesReceived, fp);
     cout << "Closing File Object" << endl;
     fclose(fp);
     cout << "Closing Socket..." << endl;
-    close(sockfd);
+    //close();
     cout << "Gracefully Shutting Down..." << endl;
     return 0;
 
