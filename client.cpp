@@ -4,7 +4,7 @@
 // bdb264
 
 // Sam Boggs
-// netid
+// sjb578
 
 
 #include <sys/types.h>
@@ -32,7 +32,7 @@
 
 #define TIMEOUT 2
 #define ATTEMPTLIMIT 20 // set max attempts to send packet
-#define packetLen 37
+#define packetLen 32
 
 using namespace std;
 
@@ -51,6 +51,8 @@ int main(int argc, char *argv[]) {
     int portno;
     struct sockaddr_in serv_addr; // Change back to serv_addr fromAddr
     struct hostent *s;
+
+
     int nPackets = 0; // Number of packets to send CHANGE
     int packet_received = -1; // highest ack received CHANGE
     int packet_sent = -1; // highest packet sent CHANGE
@@ -68,6 +70,96 @@ int main(int argc, char *argv[]) {
     ack[511] = '\0';
 
 
+
+
+    //arg 1 localhost
+    //arg 2 emulator port
+    //arg 3 client port number
+    //arg 4 file.txt
+
+
+    // 1
+    //Declare and Setup Connection for Emulator Port
+    struct hostent *em_host;            // pointer to a structure of type hostent
+    em_host = gethostbyname(argv[1]);   // host name for emulator
+    if(em_host == NULL){                // failed to obtain server's name
+        cout << "Failed to obtain emulator.\n";
+        exit(EXIT_FAILURE);
+    }
+
+    // ******************************************************************
+    // ******************************************************************
+
+
+    // 2
+    // Client Sets up DGRAM Socket for Sending
+    int CESocket = socket(AF_INET, SOCK_DGRAM, 0);
+    if(CESocket < 0){
+        cout << "Error: failed to open datagram socket.\n";
+    }
+
+
+
+    // 3
+    // Setup sockaddr_in Structure For Sending
+    struct sockaddr_in CE;
+    socklen_t CE_length = sizeof(CE);
+    bzero(&CE, sizeof(CE));
+    CE.sin_family = AF_INET;
+    bcopy((char *)em_host->h_addr, (char*)&CE.sin_addr.s_addr, em_host->h_length);  // both using localhost so this is fine
+    char * end;
+    int em_rec_port = strtol(argv[2], &end, 10);  // get emulator's receiving port and convert to int
+    CE.sin_port = htons(em_rec_port);             // set to emulator's receiving port
+
+    // ******************************************************************
+    // ******************************************************************
+
+
+    // 4
+    // client sets up datagram socket for receiving
+    int ECSocket = socket(AF_INET, SOCK_DGRAM, 0);
+    if(ECSocket < 0){
+        cout << "Error: failed to open datagram socket.\n";
+    }
+
+
+    // 5
+    // set up the sockaddr_in structure for receiving
+    struct sockaddr_in EC;
+    socklen_t EC_length = sizeof(EC);
+    bzero(&EC, sizeof(EC));
+    EC.sin_family = AF_INET;
+    EC.sin_addr.s_addr = htonl(INADDR_ANY);
+    char * end2;
+    int cl_rec_port = strtol(argv[3], &end2, 10);  // client's receiving port and convert to int
+    EC.sin_port = htons(cl_rec_port);             // set to emulator's receiving port
+
+    // 6
+    // do the binding
+    if (bind(ECSocket, (struct sockaddr *)&EC, EC_length) == -1){
+        cout << "Error in binding.\n";
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     // Create Logs
     ofstream sequenceNumberLog("clientseqnum.log", ios_base::out | ios_base::trunc);
     ofstream ackLog("clientack.log", ios_base::out | ios_base::trunc);
@@ -79,14 +171,10 @@ int main(int argc, char *argv[]) {
     }
 
     // atoi string to integer: port number specified by command line argument
-    portno = atoi(argv[2]);
-    s = gethostbyname(argv[1]);
+    // portno = atoi(argv[3]);
 
-    //Create Datagram Socket
-    if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
-        cout << "Failed to Create Socket." << endl;
-        return 0;
-    }
+    //s = gethostbyname(argv[1]);
+
 
     if (sockfd < 0)
         error("ERROR opening socket");
@@ -131,8 +219,12 @@ int main(int argc, char *argv[]) {
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_port = htons(portno);
     bcopy((char *) s->h_addr, (char *) &serv_addr.sin_addr.s_addr, s->h_length);
-
     socklen_t slen = sizeof(serv_addr);
+
+
+    //SETUP sockaddr_in structure for sending
+
+
 
     int i = 0;
     char spacketA[packetLen];
@@ -155,7 +247,6 @@ int main(int argc, char *argv[]) {
                 if (count == nPackets - 1)
                 {
                     cout << endl;
-                    cout << "ONLKEJFEFJOKDSJFLDKSJFSKJDFLSKJDFL:DKJFL:SKJDFS:LDKJFL:SKDJFLSDKJF" << endl;
 
                     packet *eotPacket = new packet(2,0,0,0);
                     memset(spacketA, 0, packetLen);

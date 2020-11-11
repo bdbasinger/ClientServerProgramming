@@ -4,7 +4,7 @@
 // bdb264
 
 // Sam Boggs
-// netid
+// sjb578
 
 #include <stdio.h>
 #include <stdlib.h>
