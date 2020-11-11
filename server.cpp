@@ -58,8 +58,7 @@ void error(const char *msg)
 }
 
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
     int sockfd = 0;
     int portno;
 
@@ -75,21 +74,21 @@ int main(int argc, char *argv[])
     int packet_received = -1;
     int packetLength = 30;
     int packetType;
+    //int s = 0;
+    //int offset;
 
     //int packetSequenceNum = 0;
     int packetSequenceNum;
 
-    if (argc < 2)
-    {
+    if (argc < 2) {
         cout << "Error! Port Number Required." << endl;
         exit(1);
-     }
+    }
 
     ofstream log("arrival.log", ios_base::out | ios_base::trunc);
     portno = atoi(argv[1]);
 
-    if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
-    {
+    if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
         cout << "Failed to create socket" << endl;
     }
 
@@ -99,12 +98,11 @@ int main(int argc, char *argv[])
     serv_addr.sin_port = htons(portno);
     serv_addr.sin_addr.s_addr = INADDR_ANY;
 
-    if (bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) == -1)
-    {
+    if (bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) == -1) {
         cout << "Failed to Bind" << endl;
     }
 
-    FILE* fp = fopen( "output.txt", "wa");
+    FILE *fp = fopen("output.txt", "wa");
     cout << "Creating File: output.txt" << endl;
 
     int bytesReceived = 0;
@@ -121,18 +119,20 @@ int main(int argc, char *argv[])
     packet *received_packet = new packet(0, 0, 0, payloadA);
 
 
-    while (1)
-    {
+    while (1) {
         recMsgSize = recvfrom(sockfd, serialized, 37, 0, (struct sockaddr *) &cli_addr, &clilen);
         if (recMsgSize < 0)
             cout << "Error: Failed To Receive Message!" << endl << endl;
 
         received_packet->deserialize(serialized);
         received_packet->printContents();
+        cout << endl << endl;
+        cout << "PRINTING TYPE: " << received_packet->getType() << endl << endl;
 
         cout << endl;
-        cout << received_packet->getData() << endl;
-        cout << "Packet Length " << received_packet->getLength() << endl;
+        //cout << "Packet Data: " << endl << received_packet->getData() << endl;
+        //cout << "Packet Length " << received_packet->getLength() << endl;
+        cout << endl;
 
 
         cout << "SENDING ACK!" << endl << endl;
@@ -140,24 +140,25 @@ int main(int argc, char *argv[])
 
         packetType = received_packet->getType();
         packetSequenceNum = received_packet->getSeqNum();
-
         cout << endl << endl << endl;
-
-        cout << packetSequenceNum << endl << endl << endl;
-
-        log << "Sequence Number for packet received: " << received_packet->getSeqNum() << endl;
-
+        cout << "Packet Sequence Number: " << packetSequenceNum << endl << endl << endl;
+        log << packetSequenceNum << endl;
+        if (packetType == 2)
+            break;
         //memcpy( destination, source, num)
         //memcpy(fileContents + bytesReceived, received_packet->getData(), 30);
-        strncpy(fileContents + bytesReceived, received_packet->getData(), strlen(received_packet->getData()));
-        bytesReceived = strlen(received_packet->getData());
+        strncpy(fileContents + bytesReceived, received_packet->getData(), 30);
+        bytesReceived += strlen(received_packet->getData());
+
 
         cout << "GOING INTO IF STATEMENT" << endl;
 
-        if (packetSequenceNum == packet_received + 1)
-        {
+        if (packetSequenceNum == packet_received + 1) {
             packet_received++;
             sendto(sockfd, ackPacketMsg, 64, 0, (struct sockaddr *) &cli_addr, clilen);
+
+            //offset = 30 * s;
+            //s += 1;
 
             /*
             int offset = 30 * packetSequenceNum;
@@ -166,15 +167,14 @@ int main(int argc, char *argv[])
             if (packetSequenceNum == 6)
                 break;
             */
+
         }
 
 
 
 
-        else if(packetType == 2)
-        {
-            cout << "EOT" << endl;
-        }
+
+
 
         // After the server has received all data packets and an EOT from the client,
         // it should send an EOT
@@ -187,11 +187,8 @@ int main(int argc, char *argv[])
 
 
         //DELETE THIS LATER
-        if(packetSequenceNum > 12)
+        if (packetSequenceNum > 12)
             break;
-
-
-
 
 
 
@@ -200,15 +197,21 @@ int main(int argc, char *argv[])
     }
 
 
+    cout << "End Of Transmission Packet Received..." << endl;
+    cout << "Attempting to write to file.." << endl;
     fwrite(fileContents, sizeof(char), bytesReceived, fp);
+    cout << "Closing File Object" << endl;
     fclose(fp);
+    cout << "Closing Socket..." << endl;
     close(sockfd);
+    cout << "Gracefully Shutting Down..." << endl;
     return 0;
 
 
+    return 0;
 
 
-
+}
 
 
 
@@ -283,10 +286,7 @@ int main(int argc, char *argv[])
 */
 
 
-cout << "End Of Program" << endl;
 
-
-}
 
 
 
