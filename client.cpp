@@ -255,7 +255,7 @@ int main(int argc, char *argv[]) {
 
 
 
-                    
+
 
 
 
@@ -263,13 +263,14 @@ int main(int argc, char *argv[]) {
 
                     //FIX THE MOTHER FUCKING PACKET!!!
 
-                    packet pack(1, packetSequenceNum, strlen(buff), buff); // Create Packet
+                    packet pack(1, packetSequenceNum, sizeof(payloadA), payloadA); // Create Packet
+
                     pack.printContents(); // Check Packet Contents
                     memset(spacketA, 0, packetLen); // Set the content
-                    strncpy(spacketA, payloadA + i, packetLen); // copy the contents of specified index to packet data buffer
                     spacketA[dest_size - 1] = '\0'; // Make sure the buffer that contains packet data is null terminated
+                    strncpy(spacketA, payloadA + i, packetLen); // copy the contents of specified index to packet data buffer
                     i += 32; // Increase the index that we take from the buffer that contains the file contents
-                    pack.serialize(spacketA); // Serialze the buffer containing specified packet data
+                    pack.serialize(spacketA); // Serialize the buffer containing specified packet data
 
                     // Send the Fucking Packet and Pray...
                     if(sendto(CESocket, spacketA, sizeof(spacketA), 0, (struct sockaddr *)&CE, sizeof(CE)) < 0){
