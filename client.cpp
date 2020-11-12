@@ -32,7 +32,7 @@
 
 #define TIMEOUT 2
 #define ATTEMPTLIMIT 20 // set max attempts to send packet
-#define packetLen 32
+#define packetLen 37
 
 using namespace std;
 
@@ -148,7 +148,6 @@ int main(int argc, char *argv[]) {
 
     // Create Logs
     ofstream sequenceNumberLog("clientseqnum.log", ios_base::out | ios_base::trunc);
-    ofstream ackLog("clientack.log", ios_base::out | ios_base::trunc);
 
     // Confirm user specifies 3 arguments when executing program
     if (argc < 4) {
@@ -200,6 +199,8 @@ int main(int argc, char *argv[]) {
 
 
     int i = 0;
+    int sam = 0;
+    int j = 37;
     char spacketA[packetLen];
     size_t dest_size = sizeof(spacketA);
     int count = 0;
@@ -232,7 +233,8 @@ int main(int argc, char *argv[]) {
                     eotPacket->serialize(spacketA);
                     cout << endl << endl << "SENDING EOT PACKET: " << endl << endl << endl;
                     sendto(CESocket, spacketA, packetLen, 0, (struct sockaddr *) &CE, CE_length);
-                }
+                    cout << "SENDING THE EOT PACKET\n";
+                 }
 
                 count++;
                 // memset(pointer to block of memory to fill, value to be set, number of bytes to be set)
@@ -263,20 +265,35 @@ int main(int argc, char *argv[]) {
 
                     //FIX THE MOTHER FUCKING PACKET!!!
 
-                    packet pack(1, packetSequenceNum, sizeof(payloadA), payloadA); // Create Packet
+                    packet *pack = new packet(1, packetSequenceNum, 37, payloadA); // Create Packet
 
-                    pack.printContents(); // Check Packet Contents
+                    pack->printContents(); // Check Packet Contents
                     memset(spacketA, 0, packetLen); // Set the content
                     spacketA[dest_size - 1] = '\0'; // Make sure the buffer that contains packet data is null terminated
-                    strncpy(spacketA, payloadA + i, packetLen); // copy the contents of specified index to packet data buffer
-                    i += 32; // Increase the index that we take from the buffer that contains the file contents
-                    pack.serialize(spacketA); // Serialize the buffer containing specified packet data
-
+		    
+                    
+                    if (sam == 1) {
+                        for(i = 0; i <= 540; i++)
+                        {
+                            payloadA[i] = payloadA[i + 31];
+                        }
+                    }
+                    sam = 1; 
+                    //char final_array[100];
+                    //final_array[100] = '\0';
+                    //std::copy(payloadA + i, payloadA + j, final_array);
+                    //i += 37;
+                    //j += 37;
+                    strncpy(spacketA, payloadA, packetLen); // copy the contents of specified index to packet data buffer
+                    // Increase the index that we take from the buffer that contains the file contents
+                    pack->serialize(spacketA); // Serialize the buffer containing specified packet data
+                    pack->printContents();
+                    cout << "Sending the fix the fucking packet" << endl;
                     // Send the Fucking Packet and Pray...
                     if(sendto(CESocket, spacketA, sizeof(spacketA), 0, (struct sockaddr *)&CE, sizeof(CE)) < 0){
                         cout << "Failed to send Packet: FIX THE FKIN PACKET" << endl;
                     }
-
+                    cout << "Send packet to emulator\n";
 
                     // MAX'S CODE:
                     //packet pkt(1,101,0,NULL); // create dummy packet
@@ -313,7 +330,7 @@ int main(int argc, char *argv[]) {
         //size = sizeof(serv_addr);
         alarm(TIMEOUT);
         packet *ackPacket = new packet(0, 0, 0, NULL);
-        while ((len = (recvfrom(ECSocket, ack, 64, 0,  (struct sockaddr *) &EC, &EC_length))) < 0)
+        while ((len = (recvfrom(ECSocket, ack, 64, 0,  (struct sockaddr *) &EC, (socklen_t*)&EC_length))) < 0)
 
             if (errno == EINTR) {
                 if (Attempt < ATTEMPTLIMIT) {

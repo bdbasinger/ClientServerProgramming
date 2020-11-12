@@ -173,7 +173,7 @@ int main(int argc, char *argv[]) {
      */
 
 
-
+    ofstream akLog("clientack.log", ios_base::out | ios_base::trunc);
 
     cout << "Hello " << endl;
 
@@ -192,6 +192,7 @@ int main(int argc, char *argv[]) {
 
     cout << "Entering While Loop" << endl;
 
+    FILE *fp = fopen("output.txt", "a");
     while (1) {
         cout << "Inside While Loop " << endl;
 
@@ -207,6 +208,7 @@ int main(int argc, char *argv[]) {
         received_packet->deserialize(serialized);
         received_packet->printContents();
 
+        log << received_packet->getSeqNum() << endl;
         cout << endl << endl;
 
         cout << "PRINTING TYPE: " << received_packet->getType() << endl << endl;
@@ -220,7 +222,8 @@ int main(int argc, char *argv[]) {
         cout << "SENDING ACK!" << endl << endl;
 
         sendto(SESocket, ackPacketMsg, 64, 0, (struct sockaddr *) &SE, sizeof(struct sockaddr_in));
-
+        
+        cout << "LINE 222\n";
 
 
 
@@ -236,14 +239,16 @@ int main(int argc, char *argv[]) {
         strncpy(fileContents + bytesReceived, received_packet->getData(), 30);
         bytesReceived += strlen(received_packet->getData());
 
-
         cout << "GOING INTO IF STATEMENT" << endl;
 
         if (packetSequenceNum == packet_received + 1)
         {
             packet_received++;
-            sendto(SESocket, ackPacketMsg, 64, 0, (struct sockaddr *) &SE, sizeof(struct sockaddr_in));
-
+            
+            if(sendto(SESocket, ackPacketMsg, 64, 0, (struct sockaddr *) &SE, clientLength) <0) {
+                cout << " FAILED TO SEND \n";
+            }
+            cout << "Actual packet acknowledgement 245\n";
         }
         // After the server has received all data packets and an EOT from the client,
         // it should send an EOT
@@ -253,10 +258,11 @@ int main(int argc, char *argv[]) {
         // Data Packet == 1
 
         //FILE* fp = fopen( "Output.txt", "wa");
-
-
+  
+        fwrite(fileContents, sizeof(char), bytesReceived, fp);
+        //fclose(fp);
         //DELETE THIS LATER
-        if (packetSequenceNum > 12)
+        if (packetSequenceNum >= 4)
             break;
 
 
@@ -267,18 +273,12 @@ int main(int argc, char *argv[]) {
 
 
 
-    FILE *fp = fopen("output.txt", "wa");
-    cout << "Creating File: output.txt" << endl;
-
     cout << "End Of Transmission Packet Received..." << endl;
     cout << "Attempting to write to file.." << endl;
-    fwrite(fileContents, sizeof(char), bytesReceived, fp);
     cout << "Closing File Object" << endl;
-    fclose(fp);
     cout << "Closing Socket..." << endl;
     //close();
     cout << "Gracefully Shutting Down..." << endl;
-    return 0;
 
 
     return 0;
