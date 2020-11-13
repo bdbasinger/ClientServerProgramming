@@ -200,7 +200,6 @@ int main(int argc, char *argv[]) {
 
     int i = 0;
     int sam = 0;
-    int j = 37;
     char spacketA[packetLen];
     size_t dest_size = sizeof(spacketA);
     int count = 0;
