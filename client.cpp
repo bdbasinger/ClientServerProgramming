@@ -148,6 +148,7 @@ int main(int argc, char *argv[]) {
 
     // Create Logs
     ofstream sequenceNumberLog("clientseqnum.log", ios_base::out | ios_base::trunc);
+    ofstream clientAckLog("clientack.log", ios_base::out | ios_base::trunc);
 
     // Confirm user specifies 3 arguments when executing program
     if (argc < 4) {
@@ -290,7 +291,7 @@ int main(int argc, char *argv[]) {
                     cout << "Sending the fix the fucking packet" << endl;
                     // Send the Fucking Packet and Pray...
                     if(sendto(CESocket, spacketA, sizeof(spacketA), 0, (struct sockaddr *)&CE, sizeof(CE)) < 0){
-                        cout << "Failed to send Packet: FIX THE FKIN PACKET" << endl;
+                        cout << "Failed to send Packet" << endl;
                     }
                     cout << "Send packet to emulator\n";
 
@@ -318,7 +319,7 @@ int main(int argc, char *argv[]) {
                         //cout << "Failed to send payload" << endl;
                     //}
                     cout << endl << endl;
-                    cout << "COUNT COUNT COUNT COUNT: " << count << endl << endl;
+                    cout << "COUNT: " << count << endl << endl;
 
 
                 }

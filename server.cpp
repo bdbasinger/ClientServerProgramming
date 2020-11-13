@@ -141,11 +141,6 @@ int main(int argc, char *argv[]) {
     int em_rec_port = strtol(argv[3], &end, 10);
     SE.sin_port = htons(em_rec_port);
 
-    cout << "Hello There " << endl;
-
-
-
-
 
     ofstream log("arrival.log", ios_base::out | ios_base::trunc);
 
@@ -175,8 +170,6 @@ int main(int argc, char *argv[]) {
 
     ofstream akLog("clientack.log", ios_base::out | ios_base::trunc);
 
-    cout << "Hello " << endl;
-
     int bytesReceived = 0;
     char fileContents[512];
     memset(fileContents, 0, sizeof(fileContents));
@@ -190,12 +183,9 @@ int main(int argc, char *argv[]) {
 
     packet *received_packet = new packet(0, 0, 0, payloadA);
 
-    cout << "Entering While Loop" << endl;
 
     FILE *fp = fopen("output.txt", "a");
     while (1) {
-        cout << "Inside While Loop " << endl;
-
 
         recvfrom(ESSocket, serialized, sizeof(serialized), 0, (struct sockaddr *) &ES, &ES_length);
         //if (recMsgSize < 0)
@@ -223,7 +213,6 @@ int main(int argc, char *argv[]) {
 
         sendto(SESocket, ackPacketMsg, 64, 0, (struct sockaddr *) &SE, sizeof(struct sockaddr_in));
         
-        cout << "LINE 222\n";
 
 
 
@@ -239,16 +228,14 @@ int main(int argc, char *argv[]) {
         strncpy(fileContents + bytesReceived, received_packet->getData(), 30);
         bytesReceived += strlen(received_packet->getData());
 
-        cout << "GOING INTO IF STATEMENT" << endl;
 
         if (packetSequenceNum == packet_received + 1)
         {
             packet_received++;
             
-            if(sendto(SESocket, ackPacketMsg, 64, 0, (struct sockaddr *) &SE, clientLength) <0) {
+            if(sendto(SESocket, ackPacketMsg, 64, 0, (struct sockaddr *) &SE, ES_length) <0) {
                 cout << " FAILED TO SEND \n";
             }
-            cout << "Actual packet acknowledgement 245\n";
         }
         // After the server has received all data packets and an EOT from the client,
         // it should send an EOT
