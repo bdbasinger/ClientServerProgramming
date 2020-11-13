@@ -49,7 +49,7 @@
 
 
 using namespace std;
-
+//
 
 void error(const char *msg)
 {
