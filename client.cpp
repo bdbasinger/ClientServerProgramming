@@ -217,7 +217,7 @@ int main(int argc, char *argv[]) {
                     lengthPacket = fileLength % 30;
                 }
 
-
+                sequenceNumberLog << packetSequenceNum; << endl;
 
 
                 // CHECK IF ITS THE LAST PACKET
