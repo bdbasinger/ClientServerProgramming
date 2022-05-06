@@ -1,8 +1,6 @@
 // Authors:
-
 // Brennan Basinger
 // bdb264
-
 // Sam Boggs
 // sjb578
 
